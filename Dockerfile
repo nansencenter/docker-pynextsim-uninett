@@ -22,6 +22,7 @@ RUN conda config --set channel_priority strict && \
     jupyter nbextension install --py nbresuse --sys-prefix && \
     jupyter nbextension enable --py nbresuse --sys-prefix
 
+# PYNEXTSIM: install extra Python packages
 RUN conda install --quiet --yes --update-all -c conda-forge cartopy gdal
 RUN pip install netcdftime cmocean netcdf4 pyproj shapely
 
@@ -66,9 +67,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/* && \
     ln -sf /usr/share/zoneinfo/Europe/Oslo /etc/localtime
 
+# PYNEXTSIM: install BAMG library
 ENV NEXTSIMDIR=/tmp \
     BAMGDIR=/opt/local/bamg
-
 # copy source, compile and copy libs of BAMG
 COPY bamg /tmp/contrib/bamg
 WORKDIR /tmp/contrib/bamg/src
@@ -79,3 +80,17 @@ RUN make -j8 \
 &&  echo /opt/local/bamg/lib/ >> /etc/ld.so.conf
 RUN ldconfig
 
+ENV TZ="Europe/Oslo" \
+    HOME=/home/notebook \
+    XDG_CACHE_HOME=/home/notebook/.cache/
+COPY normalize-username.py start-notebook.sh /usr/local/bin/
+COPY --chown=notebook:notebook .jupyter/ /opt/.jupyter/
+RUN mkdir -p /home/notebook/.ipython/profile_default/security/ && chmod go+rwx -R "$CONDA_DIR/bin" && chown notebook:notebook -R "$CONDA_DIR/bin" "$HOME" && \
+    mkdir -p "$CONDA_DIR/.condatmp" && chmod go+rwx "$CONDA_DIR/.condatmp" && chown notebook:notebook "$CONDA_DIR"
+
+# hadolint ignore=DL3002
+RUN chmod go+w -R "$HOME" && chmod o+w /home && rm -r /home/notebook
+
+USER notebook
+WORKDIR $HOME
+CMD ["/usr/local/bin/start-notebook.sh"]
