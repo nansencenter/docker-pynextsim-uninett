@@ -1,73 +1,12 @@
-FROM jupyter/scipy-notebook:d990a62010ae as miniconda
-RUN conda config --set channel_priority strict && \
-    conda install --quiet --yes --update-all -c conda-forge \
-    'nbconvert' \
-    'tqdm' \
-    'yapf==0.29*' \
-    'rise==5.6.*' \
-    'nbdime==2.*' \
-    'jupyterhub==1.1.0' \
-    'jupyterlab==2.1.*' \
-    'jupyter_contrib_nbextensions==0.5*' \
-    'jupyter-server-proxy==1.4*' && \
-    jupyter labextension install \
-    '@jupyterlab/github' \
-    'nbdime-jupyterlab' \
-    '@jupyterlab/toc' \
-    '@jupyterlab/hub-extension' && \
-    pip install ipyparallel==6.2.* jupyterlab-github escapism && \
-    git clone https://github.com/paalka/nbresuse /tmp/nbresuse && pip install /tmp/nbresuse/ && \
-    jupyter serverextension enable --py nbresuse --sys-prefix && \
-    jupyter serverextension enable jupyter_server_proxy --sys-prefix && \
-    jupyter nbextension install --py nbresuse --sys-prefix && \
-    jupyter nbextension enable --py nbresuse --sys-prefix
-
-# PYNEXTSIM: install extra Python packages
-RUN conda install --quiet --yes --update-all -c conda-forge cartopy gdal
-RUN pip install netcdftime cmocean netcdf4 pyproj shapely
-
-
-FROM jupyter/scipy-notebook:d990a62010ae
-LABEL maintainer NERSC <anton.korosov@nersc.no>
+FROM quay.io/uninett/jupyterhub-singleuser:20210215-8a4afc6
+LABEL maintainer="Anton Korosov <anton.korosov@nersc.no>"
 
 USER root
 
-# Setup ENV for Appstore to be picked up
-ENV APP_UID=999 \
-    APP_GID=999 \
-    PKG_JUPYTER_NOTEBOOK_VERSION=5.7.x
-RUN groupadd -g "$APP_GID" notebook && \
-    useradd -m -s /bin/bash -N -u "$APP_UID" -g notebook notebook && \
-    usermod -G users notebook && chmod go+rwx -R "$CONDA_DIR/bin"
-COPY --chown=notebook:notebook --from=miniconda $CONDA_DIR $CONDA_DIR
-# hadolint ignore=DL3002
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update \
+&&  apt-get install -y libgdal* gdal* libopenmpi-dev \
+&&  pip install netcdftime cmocean netcdf4 pyproj shapely cartopy xarray
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-client \
-    less \
-    net-tools \
-    man-db \
-    iputils-ping \
-    screen \
-    tmux \
-    graphviz \
-    cmake \
-    rsync \
-    p7zip-full \
-    tzdata \
-    vim \
-    unrar \
-    ca-certificates \
-    sudo \
-    openmpi-bin \
-    libopenmpi-dev \
-&& apt-get -y autoremove && \
-    apt-get -y clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    ln -sf /usr/share/zoneinfo/Europe/Oslo /etc/localtime
-
-# PYNEXTSIM: install BAMG library
 ENV NEXTSIMDIR=/tmp \
     BAMGDIR=/opt/local/bamg
 # copy source, compile and copy libs of BAMG
@@ -80,16 +19,9 @@ RUN make -j8 \
 &&  echo /opt/local/bamg/lib/ >> /etc/ld.so.conf
 RUN ldconfig
 
-ENV TZ="Europe/Oslo" \
-    HOME=/home/notebook \
-    XDG_CACHE_HOME=/home/notebook/.cache/
-COPY normalize-username.py start-notebook.sh /usr/local/bin/
-COPY --chown=notebook:notebook .jupyter/ /opt/.jupyter/
-RUN mkdir -p /home/notebook/.ipython/profile_default/security/ && chmod go+rwx -R "$CONDA_DIR/bin" && chown notebook:notebook -R "$CONDA_DIR/bin" "$HOME" && \
-    mkdir -p "$CONDA_DIR/.condatmp" && chmod go+rwx "$CONDA_DIR/.condatmp" && chown notebook:notebook "$CONDA_DIR"
-
-# hadolint ignore=DL3002
-RUN chmod go+w -R "$HOME" && chmod o+w /home && rm -r /home/notebook
+RUN chmod go+rwx -R "$CONDA_DIR/bin" \
+&&  chown notebook:notebook -R "$CONDA_DIR/bin" "$HOME" \
+&&  chown notebook:notebook "$CONDA_DIR"
 
 USER notebook
 WORKDIR $HOME
