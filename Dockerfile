@@ -4,7 +4,7 @@ LABEL maintainer="Anton Korosov <anton.korosov@nersc.no>"
 USER root
 
 RUN apt-get update \
-&&  apt-get install -y libgdal* gdal* libopenmpi-dev
+&&  apt-get install -y libopenmpi-dev
 
 ENV NEXTSIMDIR=/tmp \
     BAMGDIR=/opt/local/bamg
@@ -19,3 +19,10 @@ RUN make -j8 \
 RUN ldconfig
 
 USER notebook
+COPY environment.yml /tmp/environment.yml
+RUN  conda env create -f /tmp/environment.yml
+#RUN conda create -n pynextsim -c conda-forge -y --file /tmp/environment.txt
+
+#WORKDIR $HOME
+
+

@@ -1,0 +1,32 @@
+name: pynextsim
+channels:
+  - conda-forge
+dependencies:
+  - cartopy
+  - cython
+  - cmocean
+  - ipdb
+  - ipykernel
+  - ipython
+  - jupyter
+  - matplotlib
+  - mock
+  - netcdf4
+  - nose
+  - notebook
+  - numpy
+  - pandas
+  - paramiko
+  - pip
+  - pillow
+  - pygrib
+  - pyproj
+  - pyshp
+  - pyyaml
+  - rtree
+  - scikit-image
+  - scikit-learn
+  - scipy
+  - shapely
+  - pip:        
+    - netcdftime
