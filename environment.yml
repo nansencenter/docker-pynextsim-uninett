@@ -28,5 +28,6 @@ dependencies:
   - scikit-learn
   - scipy
   - shapely
+  - xarray
   - pip:        
     - netcdftime
