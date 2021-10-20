@@ -1,6 +1,6 @@
 FROM quay.io/uninett/jupyter-spark:20210514-6405497
 LABEL maintainer="Anton Korosov <anton.korosov@nersc.no>"
-LABEL version="0.4.0"
+LABEL version="0.5.0"
 
 USER root
 RUN apt-get update \
